@@ -21,6 +21,7 @@ import axios from 'axios';
 
 function App() {
   const [file, setFile] = useState();
+  let isDownload = true;
 
   return (
     <div>
@@ -36,19 +37,30 @@ function App() {
               </Form.Group>
             </Col>
             <Col>
-              <input id="convert-button" type="button" className="customBtn1" onClick={handleSubmit} value="Convert" />
+              <input id="convertButton" type="button" className="customBtn1" onClick={handleSubmit} value="Convert" />
             </Col>
           </Row>
         </Container>
-        <Container className="customContainer">
+        <Container>
           <Row>
             <Col md="auto customCol">
-              <ButtonGroup aria-label="Basic example" className="customBtnGrp">
-                <Button id="english" variant="info" className="customBtn5" onClick={playAudio}>English(US)</Button>
-                <Button id="hindi" variant="info" className="customBtn5" onClick={playAudio}>Hindi</Button>
-                <Button id="chinese" variant="info" className="customBtn5" onClick={playAudio}>Chinese</Button>
+              <ButtonGroup id="buttonGroup" aria-label="Basic example" className="customBtnGrp">
+                <Button id="english" variant="info" className="customBtn2" onClick={playAudio}>English(US)</Button>
+                <Button id="hindi" variant="info" className="customBtn2" onClick={playAudio}>Hindi</Button>
+                <Button id="chinese" variant="info" className="customBtn2" onClick={playAudio}>Chinese</Button>
               </ButtonGroup>
             </Col>
+            <Col md="auto">
+              <Form>
+                <Form.Check 
+                  type="switch" id="customSwitch" 
+                  label="Download Audio" onChange={handleDownload}/>
+              </Form>
+            </Col>
+          </Row>
+        </Container>
+        <Container>
+          <Row>
             <Col md="auto">
               <audio controls id="audio-player" src="" className="customAudio">
                 Your browser does not support the <code>audio</code> element.
@@ -80,6 +92,17 @@ function App() {
     });
   }
 
+  function handleDownload(event) {
+    console.log(event.target.checked);
+    if (event.target.checked === true) {
+      isDownload = true;
+    } 
+    
+    if (event.target.checked === false) {
+      isDownload = false;
+    }
+  }
+
   function playAudio(event) {
     let temp = file.name.split(".");
     let expectedFileName = temp[0] + "_" + event.currentTarget.id + ".mp3";
@@ -94,6 +117,25 @@ function App() {
         let audioUrl = "https://cc-audio-bucket.s3.amazonaws.com//tmp/" + expectedFileName;
         let audioPlayer = document.getElementById('audio-player');
         audioPlayer.src = audioUrl;
+
+        // Download audio file
+        if (isDownload) {
+            const downloadUrl = "http://localhost:8080/file/download/";
+            const params = { 
+              filename: expectedFileName 
+            };
+            const config = { responseType: 'blob' };
+            axios.get(downloadUrl, {params}, config).then((response) => {
+                  const url = window.URL.createObjectURL(new Blob([response]),);
+                  const link = document.createElement('a');
+                  link.href = url;
+                  link.setAttribute('download', expectedFileName,);
+                  document.body.appendChild(link);
+                  link.click();
+                  link.parentNode.removeChild(link);
+            })
+        }
+      
         audioPlayer.play();
       } else {
         console.log("Audio file not ready");
