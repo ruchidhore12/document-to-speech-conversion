@@ -58,4 +58,21 @@ public class S3FileUploadService {
         }
         return false;
     }
+
+    public void downloadFile(String fileName) throws IOException {
+        InputStream s3ObjectInputStream = s3Client.getObject(CC_AUDIO_BUCKET, fileName).getObjectContent();
+        InputStream reader = new BufferedInputStream(s3ObjectInputStream);
+        File file = new File(fileName.substring(5));
+        OutputStream writer = new BufferedOutputStream(new FileOutputStream(file));
+
+        int read = -1;
+        while ((read = reader.read()) != -1) {
+            writer.write(read);
+        }
+
+        writer.flush();
+        writer.close();
+        reader.close();
+        System.out.println("File downloaded :: " + fileName);
+    }
 }
