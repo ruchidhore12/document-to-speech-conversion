@@ -22,7 +22,7 @@ import axios from 'axios';
 function App() {
   const [file, setFile] = useState();
   let isDownload = true;
-  const backendURL = "http://3.89.38.117";
+  const backendURL = "http://54.164.3.187";
 
   return (
     <div>
