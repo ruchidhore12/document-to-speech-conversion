@@ -22,6 +22,7 @@ import axios from 'axios';
 function App() {
   const [file, setFile] = useState();
   let isDownload = true;
+  const backendURL = "http://3.89.38.117";
 
   return (
     <div>
@@ -78,7 +79,7 @@ function App() {
 
   function handleSubmit(event) {
     event.preventDefault();
-    const url = 'http://localhost:8080/file/upload';
+    const url = backendURL + '/file/upload';
     const formData = new FormData();
     formData.append('file', file);
     formData.append('fileName', file.name);
@@ -106,7 +107,7 @@ function App() {
   function playAudio(event) {
     let temp = file.name.split(".");
     let expectedFileName = temp[0] + "_" + event.currentTarget.id + ".mp3";
-    const url = "http://localhost:8080/file/find/";
+    const url = backendURL + "/file/find/";
     const params = { 
       filename: expectedFileName 
     };
@@ -120,7 +121,7 @@ function App() {
 
         // Download audio file
         if (isDownload) {
-            const downloadUrl = "http://localhost:8080/file/download/";
+            const downloadUrl = backendURL + "/file/download/";
             const params = { 
               filename: expectedFileName 
             };
