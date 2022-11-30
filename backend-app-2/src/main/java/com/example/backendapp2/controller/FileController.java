@@ -16,6 +16,8 @@
 package com.example.backendapp2.controller;
 
 import com.example.backendapp2.service.S3FileUploadService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
@@ -34,13 +36,18 @@ import java.util.Map;
 @RestController
 public class FileController {
 
+    private static Logger logger = LoggerFactory.getLogger(FileController.class);
+    private static final String MAP_KEY = "found";
     @Autowired
     private S3FileUploadService service;
 
     @PostMapping(value = "/file/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public void upload(@RequestParam MultipartFile file) throws IOException {
+    public Map<String, String> upload(@RequestParam MultipartFile file) throws IOException {
+        Map<String, String> map = new HashMap<>();
         file.transferTo(getFilePath(file));
         uploadFileToS3(file);
+        map.put("file_uploaded", "true");
+        return map;
     }
 
     @GetMapping(value = "/file/find/")
@@ -48,12 +55,12 @@ public class FileController {
         Map<String, String> map = new HashMap<>();
         if (filename.length() > 1) {
             if (service.search("/tmp/" + filename)) {
-                map.put("found", "audio file present");
+                map.put(MAP_KEY, "audio file present");
             } else {
-                map.put("found", "audio file not generated yet");
+                map.put(MAP_KEY, "audio file not generated yet");
             }
         } else {
-            map.put("found", "filename is empty");
+            map.put(MAP_KEY, "filename is empty");
         }
         return map;
     }
@@ -63,7 +70,7 @@ public class FileController {
         try {
             service.downloadFile("/tmp/" + filename);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            logger.error("Exception while downloading file {}", e.getMessage());
         }
 
         Path path = getAudioFilePath(filename);
@@ -79,17 +86,16 @@ public class FileController {
                         contentType(MediaType.MULTIPART_FORM_DATA).
                         body(resource);
             } catch (FileNotFoundException e) {
-                throw new RuntimeException(e);
+                logger.error("Exception file not found {}", e.getMessage());
             }
         } else {
-            System.out.println("File does not exist yet.");
+            logger.info("File does not exist in S3 bucket yet");
         }
         return null;
     }
 
     private void uploadFileToS3(MultipartFile file) {
-        String uploadedFileName = service.uploadFile(file);
-        System.out.println("Uploaded file's name :: " + uploadedFileName);
+        service.uploadFile(file);
     }
 
     private Path getFilePath(MultipartFile file) {

@@ -18,6 +18,8 @@ package com.example.backendapp2.service;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.iterable.S3Objects;
 import com.amazonaws.services.s3.model.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -27,6 +29,8 @@ import java.util.Objects;
 
 @Service
 public class S3FileUploadService {
+
+    private static Logger logger = LoggerFactory.getLogger(S3FileUploadService.class);
     public static final String CC_DOCUMENT_BUCKET = "cc-documents-bucket";
     public static final String CC_AUDIO_BUCKET = "cc-audio-bucket";
 
@@ -45,7 +49,7 @@ public class S3FileUploadService {
         try (FileOutputStream fos = new FileOutputStream(convertedFile)) {
             fos.write(file.getBytes());
         } catch (IOException e) {
-            System.out.println("Error converting multipartFile to file :: " + e);
+            logger.error("Exception while converting multipart file to file {}", e.getMessage());
         }
         return convertedFile;
     }
@@ -61,18 +65,17 @@ public class S3FileUploadService {
 
     public void downloadFile(String fileName) throws IOException {
         InputStream s3ObjectInputStream = s3Client.getObject(CC_AUDIO_BUCKET, fileName).getObjectContent();
-        InputStream reader = new BufferedInputStream(s3ObjectInputStream);
         File file = new File(fileName.substring(5));
-        OutputStream writer = new BufferedOutputStream(new FileOutputStream(file));
-
         int read = -1;
-        while ((read = reader.read()) != -1) {
-            writer.write(read);
+        try(InputStream reader = new BufferedInputStream(s3ObjectInputStream);
+            OutputStream writer = new BufferedOutputStream(new FileOutputStream(file))) {
+            while ((read = reader.read()) != -1) {
+                writer.write(read);
+            }
+            writer.flush();
+        } catch (Exception e) {
+            logger.error("Exception while downloading file from S3 bucket {}", e.getMessage());
         }
-
-        writer.flush();
-        writer.close();
-        reader.close();
-        System.out.println("File downloaded :: " + fileName);
+        logger.info("File downloaded from S3 bucket {}", fileName);
     }
 }
